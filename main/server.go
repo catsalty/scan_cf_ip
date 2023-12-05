@@ -19,16 +19,17 @@ type Config struct {
 }
 
 type CloudflareConfig struct {
-	Key        string `mapstructure:"key"`
-	User       string `mapstructure:"user"`
-	RecordName string `mapstructure:"record_name"`
-	RecordType string `mapstructure:"record_type"`
-	TTL        int    `mapstructure:"ttl"`
-	HttpTimeOut int  `mapstructure:"http_time_out"`
-	ZoneID     string `mapstructure:"zone_id"`
-	RecordID   string `mapstructure:"record_id"`
-	TestDomain string `mapstructure:"test_domain"`
-	UpdateUrl  string `mapstructure:"update_url"`
+	Key         string `mapstructure:"key"`
+	User        string `mapstructure:"user"`
+	RecordName  string `mapstructure:"record_name"`
+	HttpTimeOut int    `mapstructure:"http_time_out"`
+	RecordType  string `mapstructure:"record_type"`
+	TTL         int    `mapstructure:"ttl"`
+	ZoneID      string `mapstructure:"zone_id"`
+	RecordID    string `mapstructure:"record_id"`
+	TestDomain  string `mapstructure:"test_domain"`
+	TestPort    string `mapstructure:"test_port"`
+	UpdateUrl   string `mapstructure:"update_url"`
 }
 
 func updateDDNS(fastestIP string, cfConfig CloudflareConfig) {
@@ -58,40 +59,45 @@ func updateDDNS(fastestIP string, cfConfig CloudflareConfig) {
 }
 
 func getIpSpeed(ip string, cfConfig CloudflareConfig) float64 {
-	client := &http.Client{
-		Timeout: time.Duration(cfConfig.HttpTimeOut) * time.Second,
-	}
 	start := time.Now()
-	fmt.Println("request ip ==> :", ip)
-	dialer := &net.Dialer{
-		Timeout:   time.Duration(cfConfig.HttpTimeOut)  * time.Second,
-		KeepAlive: time.Duration(cfConfig.HttpTimeOut) * time.Second,
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Resolver: &net.Resolver{},
+		}).DialContext,
 	}
-	http.DefaultTransport.(*http.Transport).DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == cfConfig.TestDomain+":2083" {
-			addr = fmt.Sprintf("%s:443", ip)
-		}
-		return dialer.DialContext(ctx, network, addr)
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialer := &net.Dialer{}
+		return dialer.DialContext(ctx, network, net.JoinHostPort(ip, cfConfig.TestPort))
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s:2083/clientarea.php", cfConfig.TestDomain), nil)
+	// 创建一个自定义的 Client，使用自定义的 Transport
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   time.Duration(cfConfig.HttpTimeOut) * time.Second,
+	}
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s:%s/clientarea.php", cfConfig.TestDomain, cfConfig.TestPort), nil)
 	if err != nil {
-		fmt.Println("Failed to create request:", err)
+		fmt.Println("Failed to create request:", err, "ip->", ip)
 		return math.MaxFloat64
 	}
 	req.Header.Set("Connection", "close")
 	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Request failed for IP:", err)
-		return math.MaxFloat64
+
+	if resp != nil {
+		defer resp.Body.Close()
 	}
-	fmt.Println("close  request body:", ip)
-	defer resp.Body.Close()
-	var speed = float64(10000.00 / time.Since(start))
-	return speed
+	if resp != nil && resp.StatusCode == 400 {
+		speed := 100.00 / time.Since(start).Seconds()
+		fmt.Println("valid  ip :", ip, "speed=>", speed)
+		return speed
+	} else {
+		fmt.Println("broken ip -> ", ip)
+	}
+	return math.MaxFloat64
 }
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Please provide the URL as a parameter.")
+		fmt.Println("Please input config")
 		os.Exit(1)
 	}
 	viper.SetConfigFile(os.Args[1])
