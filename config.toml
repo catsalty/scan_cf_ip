@@ -1,0 +1,7 @@
+[cloudflare]
+key = ""
+user = ""
+record_name = ""
+zone_id = ""
+record_id = ""
+test_domain = ""
