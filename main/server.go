@@ -24,6 +24,7 @@ type CloudflareConfig struct {
 	RecordName string `mapstructure:"record_name"`
 	RecordType string `mapstructure:"record_type"`
 	TTL        int    `mapstructure:"ttl"`
+	HttpTimeOut int  `mapstructure:"http_time_out"`
 	ZoneID     string `mapstructure:"zone_id"`
 	RecordID   string `mapstructure:"record_id"`
 	TestDomain string `mapstructure:"test_domain"`
@@ -58,13 +59,13 @@ func updateDDNS(fastestIP string, cfConfig CloudflareConfig) {
 
 func getIpSpeed(ip string, cfConfig CloudflareConfig) float64 {
 	client := &http.Client{
-		Timeout: 2 * time.Second,
+		Timeout: cfConfig.HttpTimeOut * time.Second,
 	}
 	start := time.Now()
 	fmt.Println("request ip ==> :", ip)
 	dialer := &net.Dialer{
-		Timeout:   2 * time.Second,
-		KeepAlive: 2 * time.Second,
+		Timeout:   cfConfig.HttpTimeOut * time.Second,
+		KeepAlive: cfConfig.HttpTimeOut * time.Second,
 	}
 	http.DefaultTransport.(*http.Transport).DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if addr == cfConfig.TestDomain+":2083" {
