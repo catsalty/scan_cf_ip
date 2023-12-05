@@ -149,8 +149,8 @@ func main() {
 			}()
 			mutex.Lock()
 			var speed = getIpSpeed(ip, config.Cloudflare)
-			fmt.Printf("%s response -> %f\n", ip, speed)
 			if speed < fastestSpeed {
+				fmt.Printf("%s response -> %f\n", ip, speed)
 				fastestIP = ip
 				fastestSpeed = speed
 				if !hasSetIp {
