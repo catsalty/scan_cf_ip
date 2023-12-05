@@ -80,13 +80,17 @@ func getIpSpeed(ip string, cfConfig CloudflareConfig) float64 {
 		fmt.Println("Failed to create request:", err, "ip->", ip)
 		return math.MaxFloat64
 	}
-	req.Header.Set("Connection", "close")
+	req.Header.Set("Connection", "Upgrade")
+	req.Header.Set("Upgrade", "websocket")
+	req.Header.Set("Sec-WebSocket-Key", "x3JJHMbDL1EzLkh9GBhXDw==")
+	req.Header.Set("Sec-WebSocket-Protocol", "chat, superchat")
+	req.Header.Set("Sec-WebSocket-Version", "13")
 	resp, err := client.Do(req)
 
 	if resp != nil {
 		defer resp.Body.Close()
 	}
-	if resp != nil && resp.StatusCode == 400 {
+	if resp != nil && resp.StatusCode == 101 {
 		speed := 100.00 / time.Since(start).Seconds()
 		fmt.Println("valid  ip :", ip, "speed=>", speed)
 		return speed
