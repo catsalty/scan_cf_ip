@@ -147,15 +147,13 @@ func main() {
 				<-semaphore // 协程结束后释放信号量，允许其他协程启动
 				wg.Done()
 			}()
-			var speed = getIpSpeed(ip, config.Cloudflare)
 			mutex.Lock()
-			if resp.StatusCode == http.StatusBadRequest {
-				fmt.Printf("%s response -> %f\n", ip, speed)
-				if speed < fastestSpeed {
-					fastestIP = ip
-					fastestSpeed = speed
-				}
-				if !hasSetIp && resp.StatusCode == http.StatusBadRequest {
+			var speed = getIpSpeed(ip, config.Cloudflare)
+			fmt.Printf("%s response -> %f\n", ip, speed)
+			if speed < fastestSpeed {
+				fastestIP = ip
+				fastestSpeed = speed
+				if !hasSetIp {
 					updateDDNS(ip, config.Cloudflare)
 					hasSetIp = true
 				}
