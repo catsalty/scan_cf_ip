@@ -27,6 +27,7 @@ type CloudflareConfig struct {
 	ZoneID     string `mapstructure:"zone_id"`
 	RecordID   string `mapstructure:"record_id"`
 	TestDomain string `mapstructure:"test_domain"`
+	UpdateUrl  string `mapstructure:"update_url"`
 }
 
 func updateDDNS(fastestIP string, cfConfig CloudflareConfig) {
@@ -92,22 +93,19 @@ func main() {
 		fmt.Println("Please provide the URL as a parameter.")
 		os.Exit(1)
 	}
-	viper.SetConfigFile("config.toml")
+	viper.SetConfigFile(os.Args[1])
 	err := viper.ReadInConfig()
 	if err != nil {
 		fmt.Println("Failed to read config file:", err)
 		return
 	}
-
 	var config Config
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		fmt.Println("Failed to unmarshal config file:", err)
 		return
 	}
-
-	url := os.Args[1]
-	resp, err := http.Get(url)
+	resp, err := http.Get(config.Cloudflare.UpdateUrl)
 	if err != nil {
 		fmt.Println("Failed to fetch IP list:", err)
 		os.Exit(1)
