@@ -147,8 +147,8 @@ func main() {
 				<-semaphore // 协程结束后释放信号量，允许其他协程启动
 				wg.Done()
 			}()
-			mutex.Lock()
 			var speed = getIpSpeed(ip, config.Cloudflare)
+			mutex.Lock()
 			if speed < fastestSpeed {
 				fmt.Printf("%s response -> %f\n", ip, speed)
 				fastestIP = ip
