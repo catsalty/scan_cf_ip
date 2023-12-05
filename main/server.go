@@ -59,13 +59,13 @@ func updateDDNS(fastestIP string, cfConfig CloudflareConfig) {
 
 func getIpSpeed(ip string, cfConfig CloudflareConfig) float64 {
 	client := &http.Client{
-		Timeout: cfConfig.HttpTimeOut * time.Second,
+		Timeout: time.Duration(cfConfig.HttpTimeOut) * time.Second,
 	}
 	start := time.Now()
 	fmt.Println("request ip ==> :", ip)
 	dialer := &net.Dialer{
-		Timeout:   cfConfig.HttpTimeOut * time.Second,
-		KeepAlive: cfConfig.HttpTimeOut * time.Second,
+		Timeout:   time.Duration(cfConfig.HttpTimeOut)  * time.Second,
+		KeepAlive: time.Duration(cfConfig.HttpTimeOut) * time.Second,
 	}
 	http.DefaultTransport.(*http.Transport).DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if addr == cfConfig.TestDomain+":2083" {
